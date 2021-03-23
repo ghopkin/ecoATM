@@ -6,7 +6,7 @@ keys = 'C:/Users/grace/Keys/BackupKeys.csv'
 
 amazonkey = pd.read_csv(keys)
 
-s3 = boto3.client('s3',aws_access_key_id='AKIAJSWUFOMZ6TM535QQ',aws_secret_access_key='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')
+s3 = boto3.client('s3',aws_access_key_id=amazonkey['AccessKey'][0],aws_secret_access_key=amazonkey['SecretKey'][0])
 
 dates = []
 import datetime
