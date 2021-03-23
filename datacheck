@@ -2,6 +2,9 @@ import pandas as pd
 import boto3
 import os
 localfolder = 'C:/Users/grace/ecoATM/'
+keys = 'C:/Users/grace/Keys/BackupKeys.csv'
+
+amazonkey = pd.read_csv(keys)
 
 s3 = boto3.client('s3',aws_access_key_id='AKIAJSWUFOMZ6TM535QQ',aws_secret_access_key='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')
 
