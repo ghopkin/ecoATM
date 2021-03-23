@@ -1,1 +1,173 @@
+import pandas as pd
+import boto3
+import os
+localfolder = 'C:/Users/grace/ecoATM/'
 
+s3 = boto3.client('s3',aws_access_key_id='AKIAJSWUFOMZ6TM535QQ',aws_secret_access_key='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')
+
+dates = []
+import datetime
+from datetime import date
+#date = datetime.datetime(2020,9,11)
+today = date.today()
+date = date.today() + datetime.timedelta(days=1)
+
+for i in range(7): 
+    date -= datetime.timedelta(days=1)
+    if len(str(date.day)) == 1:
+        day = '0' + str(date.day)
+    else:
+        day = str(date.day)
+    if len(str(date.month)) == 1:
+        month = '0' + str(date.month)
+    else:
+        month = str(date.month)
+    year = str(date.year)
+    dates.append(year + '-' + month + '-' + day)
+    
+   folder = 'ecoATM/'
+try:
+    del token
+except:
+    pass
+responselist=[]
+more = True;
+while(more):
+    if('token' in locals()):
+        response = s3.list_objects_v2(Bucket = 'mozenda-backups-hot',Prefix = folder,ContinuationToken = token)
+    else:
+        response = s3.list_objects_v2(Bucket = 'mozenda-backups-hot',Prefix = folder)
+    responselist = responselist+response['Contents']
+    try:
+        token = response['NextContinuationToken']
+    except KeyError:
+        more = False
+
+files=[]
+for response in responselist:
+    for date in dates:
+        if (date in response['Key'] and '.csv' in response['Key']):
+            files.append(response['Key'])
+            
+report = pd.DataFrame()
+
+for file in files:
+    
+    downloadname = file.split('/')[-1]
+    s3.download_file('mozenda-backups-hot', file, localfolder + downloadname)
+    row = {}
+    df = pd.read_csv(localfolder + downloadname)
+    df = df.fillna('')
+    filename = downloadname.rsplit('_',1)[0]
+
+    
+    ipadcarrierlist = ['UNLOCKED', 'WIFI', '']
+    ipadcarriers = df[df['DEVICE-NAME'].str.contains('IPAD')]['DEVICE-CARRIER'].unique()
+
+    ipadcarriercheck = True
+    for carrier in ipadcarriers:
+        if not (carrier in ipadcarrierlist) and str(carrier) != '':
+            ipadcarriercheck = False
+            row.update({'FileName': file})
+            row.update({'Error': f'{carrier} is not a valid IPAD carrier'})
+            report = report.append(pd.DataFrame(data=row, index=[0]))
+        
+
+    devicenameslist = ['IPAD 2', 'IPAD 3', 'IPAD 4', 'IPAD 5', 'IPAD 6', 'IPAD 7', 'IPAD 8', 'IPAD AIR', 'IPAD AIR 2',
+                        'IPAD AIR 3', 'IPAD AIR 4', 'IPAD MINI', 'IPAD MINI 2', 'IPAD MINI 3', 'IPAD MINI 4',
+                        'IPAD MINI 5', 'IPAD PRO 9.7"', 'IPAD PRO 12.9"', 'IPAD PRO 2 10.5"', 'IPAD PRO 2 12.9"',
+                        'IPAD PRO 3 11"', 'IPAD PRO 3 12.9"', 'IPAD PRO 4 11"', 'IPAD PRO 4 12.9"', 'IPHONE 6S',
+                        'IPHONE 6S PLUS', 'IPHONE 7', 'IPHONE 7 PLUS', 'IPHONE 8', 'IPHONE 8 PLUS', 'IPHONE X',
+                        'IPHONE XR', 'IPHONE XS', 'IPHONE XS MAX', 'IPHONE 11', 'IPHONE 11 PRO', 'IPHONE 11 PRO MAX',
+                        'IPHONE 12', 'IPHONE 12 MINI', 'IPHONE 12 PRO', 'IPHONE 12 PRO MAX', 'PIXEL', 'PIXEL XL',
+                        'PIXEL 2', 'PIXEL 2 XL', 'PIXEL 3', 'PIXEL 3 XL', 'PIXEL 3A', 'PIXEL 3A XL', 'PIXEL 4',
+                        'PIXEL 4A', 'PIXEL 4A 5G', 'PIXEL 4 XL', 'PIXEL 5', 'GALAXY FOLD', 'GALAXY NOTE 8',
+                        'GALAXY NOTE 9', 'GALAXY NOTE 10+', 'GALAXY NOTE 10+ 5G', 'GALAXY S7', 'GALAXY S7 ACTIVE',
+                        'GALAXY S7 EDGE', 'GALAXY S8', 'GALAXY S8 ACTIVE', 'GALAXY S8+', 'GALAXY S9', 'GALAXY S9+',
+                        'GALAXY S10E', 'GALAXY S10', 'GALAXY S10 5G', 'GALAXY S10+', 'GALAXY S20', 'GALAXY S20 FE',
+                        'GALAXY S20+', 'GALAXY S20 ULTRA', 'GALAXY S21', 'GALAXY S21+', 'GALAXY S21 ULTRA']
+
+    devicenames = df['DEVICE-NAME'].unique()
+
+    devicenamecheck = True
+    for devicename in devicenames:
+        if not (devicename in devicenameslist):
+            devicenamecheck = False
+            row.update({'FileName': file})
+            row.update({'Error': f'{devicename} is not a valid device name'})
+            report = report.append(pd.DataFrame(data=row, index=[0]))
+    
+    devicecapacities = df['DEVICE-CAPACITY'].unique()
+
+    noduplicatecheck = True
+    duplicate = df[df.duplicated()] 
+    if len(duplicate) > 0:
+        noduplicatecheck = False
+        row.update({'FileName': file})
+        row.update({'Error': 'File contains duplicates'})
+        report = report.append(pd.DataFrame(data=row, index=[0]))
+    
+    devicecapacitycheck = True
+    for capacity in devicecapacities:
+        if not (('GB' in str(capacity)) or ('TB' in str(capacity))) and str(capacity) != '' and str(capacity) != '0':
+            print(file)
+            print(capacity)
+            devicecapacitycheck = False
+            row.update({'FileName': file})
+            row.update({'Error': f'{capacity} is not a valid capacity'})
+            report = report.append(pd.DataFrame(data=row, index=[0]))
+    
+    
+    devicebrandslist = ['Apple', 'Google', 'Samsung']
+    devicebrands = df['DEVICE-BRAND'].unique()
+
+    devicebrandcheck = True
+    for brand in devicebrands:
+        if not (brand in devicebrandslist):
+            devicebrandcheck = False
+            row.update({'FileName': file})
+            row.update({'Error': f'{brand} is not a valid device brand'})
+            report = report.append(pd.DataFrame(data=row, index=[0]))
+
+ 
+    
+    regionslist = ['USA', 'Germany', 'UK']
+    regions = df['REGION'].unique()
+
+    regioncheck = True
+    for region in regions:
+        if not (region in regionslist):
+            regioncheck = False
+            row.update({'FileName': file})
+            row.update({'Error': f'{region} is not a valid region'})
+            report = report.append(pd.DataFrame(data=row, index=[0]))
+
+    
+    channellist = ['Retail', 'Trade-in']
+    channels = df['CHANNEL'].unique()
+    
+    channelcheck = True
+    for channel in channels:
+        if not (channel in channellist):
+
+            channelcheck = False
+            row.update({'FileName': file})
+            row.update({'Error': f'{channel} is not a valid dchannel'})
+            report = report.append(pd.DataFrame(data=row, index=[0]))
+    
+    
+    competitorprice = df['COMPETITOR-PRICE'].unique()
+    competitorpriceunique = df['COMPETITOR-PRICE']
+
+    competitorpricecheck = True
+    for price in competitorprice:
+        if not (not('$' in str(price)) and ('.' in str(price))) and str(price) != '':
+            competitorpricecheck = False
+            row.update({'FileName': file})
+            row.update({'Error': f'{price} is not a valid price'})
+            report = report.append(pd.DataFrame(data=row, index=[0]))
+
+
+    os.remove('ecoATM/' + downloadname)
+    
+report.to_csv(f'{localfolder}ecoATM_QA_' + str(today) +'.csv', index=False)
