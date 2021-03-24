@@ -134,7 +134,7 @@ for file in files:
 
  
     
-    regionslist = ['USA', 'Germany', 'UK']
+    regionslist = ['USA', 'Germany', 'UK', 'France']
     regions = df['REGION'].unique()
 
     regioncheck = True
