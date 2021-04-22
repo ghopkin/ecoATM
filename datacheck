@@ -57,7 +57,7 @@ report = pd.DataFrame()
 for file in files:
     
     downloadname = file.split('/')[-1]
-    s3.download_file('mozenda-backups-hot', file, localfolder + downloadname)
+    s3.download_file('mozenda-backups-hot-2', file, localfolder + downloadname)
     row = {}
     df = pd.read_csv(localfolder + downloadname)
     df = df.fillna('')
