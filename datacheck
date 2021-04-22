@@ -28,7 +28,7 @@ for i in range(7):
     year = str(date.year)
     dates.append(year + '-' + month + '-' + day)
     
-   folder = 'ecoATM/'
+folder = 'ecoATM/'
 try:
     del token
 except:
