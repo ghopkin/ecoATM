@@ -171,6 +171,6 @@ for file in files:
             report = report.append(pd.DataFrame(data=row, index=[0]))
 
 
-    os.remove('ecoATM/' + downloadname)
+    os.remove(localfolder + downloadname)
     
 report.to_csv(f'{localfolder}ecoATM_QA_' + str(today) +'.csv', index=False)
